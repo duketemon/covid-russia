@@ -1,12 +1,8 @@
 import os
 import json
+import pandas as pd
 from collections import defaultdict
 
-
-def get_subjects():
-    with open('RF.subjects', 'r') as f:
-        subjects = f.read().split('\n')
-        return {s.strip() for s in subjects}
 
 def clean_subject_name(subject_name):
     subject_name = subject_name.replace('–', '—')
@@ -26,7 +22,7 @@ def clean_subject_name(subject_name):
     return subject_name
 
 
-def extract_info(line: str):
+def extract_info_from_line(line: str):
     text, healed, died = line.split('/')
     values = text.split('–')
     infected = values[-1]
@@ -43,7 +39,7 @@ def start_processing(data_path):
         with open(data_path + filename) as f:
             print(filename)
             for line in f.read().split('\n'):
-                subject, infected, healed, died = extract_info(line)
+                subject, infected, healed, died = extract_info_from_line(line)
                 data[subject]['dates'].append(filename)
                 data[subject]['infected'].append(infected)
                 data[subject]['healed'].append(healed)
@@ -54,7 +50,8 @@ def start_processing(data_path):
                 RUSSIA_DATA[filename]['died'].append(died)
     return data
 
-SUBJECTS = get_subjects()
+df_subject_districts = pd.read_csv('rf-subject-districts.csv')
+SUBJECTS = set(df_subject_districts['Субъект'])
 data_path = 'data/'
 RUSSIA_DATA = defaultdict(lambda: defaultdict(list))
 DATA = start_processing(data_path)
@@ -65,6 +62,23 @@ for d in DATA['Россия']['dates']:
     DATA['Россия']['healed'].append(sum(RUSSIA_DATA[d]['healed']))
     DATA['Россия']['died'].append(sum(RUSSIA_DATA[d]['died']))
 
+# Данные для вэба
 output_filename = 'stats.js'
 with open(output_filename, 'w') as f:
     json.dump(DATA, f, ensure_ascii=False)
+
+
+# Данные для построения иерархичечного графика "Федеральные округа - Субъекты"
+infected, healed, died = [], [], []
+for index, row in df_subject_districts.iterrows():
+    infected.append(DATA[row['Субъект']]['infected'][-1])
+    healed.append(DATA[row['Субъект']]['healed'][-1])
+    died.append(DATA[row['Субъект']]['died'][-1])
+
+pd.DataFrame(data={
+    'Субъект': df_subject_districts['Субъект'],
+    'Федеральный Округ': df_subject_districts['Федеральный Округ'],
+    'Зараженных': infected,
+    'Вылечившихся': healed,
+    'Умерших': died,
+}).to_csv('subject-districts-chart-data.csv', index=False)
