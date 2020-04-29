@@ -50,7 +50,8 @@ def start_processing(data_path):
                 RUSSIA_DATA[filename]['died'].append(died)
     return data
 
-df_subject_districts = pd.read_csv('rf-subject-districts.csv')
+
+df_subject_districts = pd.read_csv('rf-structure.csv')
 SUBJECTS = set(df_subject_districts['Субъект'])
 data_path = 'data/'
 RUSSIA_DATA = defaultdict(lambda: defaultdict(list))
@@ -69,16 +70,37 @@ with open(output_filename, 'w') as f:
 
 
 # Данные для построения иерархичечного графика "Федеральные округа - Субъекты"
-infected, healed, died = [], [], []
-for index, row in df_subject_districts.iterrows():
-    infected.append(DATA[row['Субъект']]['infected'][-1])
-    healed.append(DATA[row['Субъект']]['healed'][-1])
-    died.append(DATA[row['Субъект']]['died'][-1])
+timeline_data = dict()
+for d in DATA['Россия']['dates']:
+    timeline_data[d] = list()
 
-pd.DataFrame(data={
+for subject in df_subject_districts['Субъект']:
+    if not all([len(timeline_data['20.03.26']) == len(timeline_data[key]) for key in timeline_data]):
+    # if subject == 'Удмуртская Республика':
+        print('AAAA')
+    for i, date in enumerate(DATA[subject]['dates']):
+        timeline_data[date].append(DATA[subject]['infected'][i])
+    empty_values = sorted(timeline_data.keys())[:len(DATA['Россия']['dates'])-len(DATA[subject]['dates'])]
+    for date in empty_values:
+        timeline_data[date].append(0)
+
+# infected, healed, died = [], [], []
+# for index, row in df_subject_districts.iterrows():
+#     infected.append(DATA[row['Субъект']]['infected'][-1])
+#     healed.append(DATA[row['Субъект']]['healed'][-1])
+#     died.append(DATA[row['Субъект']]['died'][-1])
+
+# print(timeline_data.keys())
+# print(len(timeline_data['20.03.26']), len(timeline_data['20.04.26']))
+
+output_data = {
     'Субъект': df_subject_districts['Субъект'],
     'Федеральный Округ': df_subject_districts['Федеральный Округ'],
-    'Зараженных': infected,
-    'Вылечившихся': healed,
-    'Умерших': died,
-}).to_csv('subject-districts-chart-data.csv', index=False)
+}
+
+for key, values in timeline_data.items():
+    _, mm, dd = key.split('.')
+    date = f'{dd}.{mm}'
+    output_data[date] = values
+
+pd.DataFrame(data=output_data).to_csv('data-race-chart.csv', index=False)
