@@ -77,7 +77,7 @@ for d in DATA['Россия']['dates']:
 for subject in df_subject_districts['Субъект']:
     if not all([len(timeline_data['20.03.26']) == len(timeline_data[key]) for key in timeline_data]):
     # if subject == 'Удмуртская Республика':
-        print('AAAA')
+        print(subject)
     for i, date in enumerate(DATA[subject]['dates']):
         timeline_data[date].append(DATA[subject]['infected'][i])
     empty_values = sorted(timeline_data.keys())[:len(DATA['Россия']['dates'])-len(DATA[subject]['dates'])]
