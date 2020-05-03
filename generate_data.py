@@ -70,37 +70,40 @@ with open(output_filename, 'w') as f:
 
 
 # Данные для построения иерархичечного графика "Федеральные округа - Субъекты"
-timeline_data = dict()
+timeline_data_infected, timeline_data_healed, timeline_data_died = dict(), dict(), dict()
 for d in DATA['Россия']['dates']:
-    timeline_data[d] = list()
+    timeline_data_infected[d] = list()
+    timeline_data_healed[d] = list()
+    timeline_data_died[d] = list()
 
 for subject in df_subject_districts['Субъект']:
-    if not all([len(timeline_data['20.03.26']) == len(timeline_data[key]) for key in timeline_data]):
-    # if subject == 'Удмуртская Республика':
+    if not all([len(timeline_data_infected['20.03.26']) == len(timeline_data_infected[key]) for key in timeline_data_infected]):
         print(subject)
     for i, date in enumerate(DATA[subject]['dates']):
-        timeline_data[date].append(DATA[subject]['infected'][i])
-    empty_values = sorted(timeline_data.keys())[:len(DATA['Россия']['dates'])-len(DATA[subject]['dates'])]
+        timeline_data_infected[date].append(DATA[subject]['infected'][i])
+        timeline_data_healed[date].append(DATA[subject]['healed'][i])
+        timeline_data_died[date].append(DATA[subject]['died'][i])
+    empty_values = sorted(timeline_data_infected.keys())[:len(DATA['Россия']['dates'])-len(DATA[subject]['dates'])]
     for date in empty_values:
-        timeline_data[date].append(0)
+        timeline_data_infected[date].append(0)
+        timeline_data_healed[date].append(0)
+        timeline_data_died[date].append(0)
 
-# infected, healed, died = [], [], []
-# for index, row in df_subject_districts.iterrows():
-#     infected.append(DATA[row['Субъект']]['infected'][-1])
-#     healed.append(DATA[row['Субъект']]['healed'][-1])
-#     died.append(DATA[row['Субъект']]['died'][-1])
 
-# print(timeline_data.keys())
-# print(len(timeline_data['20.03.26']), len(timeline_data['20.04.26']))
+def save_data(filename, timeline_data):
+    output_data = {
+        'Субъект': df_subject_districts['Субъект'],
+        'Федеральный Округ': df_subject_districts['Федеральный Округ'],
+    }
 
-output_data = {
-    'Субъект': df_subject_districts['Субъект'],
-    'Федеральный Округ': df_subject_districts['Федеральный Округ'],
-}
+    for key, values in timeline_data.items():
+        _, mm, dd = key.split('.')
+        date = f'{dd}.{mm}'
+        output_data[date] = values
 
-for key, values in timeline_data.items():
-    _, mm, dd = key.split('.')
-    date = f'{dd}.{mm}'
-    output_data[date] = values
+    pd.DataFrame(data=output_data).to_csv(filename, index=False)
 
-pd.DataFrame(data=output_data).to_csv('data-race-chart.csv', index=False)
+
+save_data('data-infected.csv', timeline_data_infected)
+save_data('data-healed.csv', timeline_data_healed)
+save_data('data-died.csv', timeline_data_died)
