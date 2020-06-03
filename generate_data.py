@@ -1,5 +1,6 @@
 import os
 import json
+import numpy as np
 import pandas as pd
 from collections import defaultdict
 
@@ -63,13 +64,6 @@ for d in DATA['Россия']['dates']:
     DATA['Россия']['healed'].append(sum(RUSSIA_DATA[d]['healed']))
     DATA['Россия']['died'].append(sum(RUSSIA_DATA[d]['died']))
 
-# Данные для вэба
-output_filename = 'data-stats.js'
-with open(output_filename, 'w') as f:
-    json.dump(DATA, f, ensure_ascii=False)
-
-
-# Данные для построения иерархичечного графика "Федеральные округа - Субъекты"
 timeline_data_infected, timeline_data_healed, timeline_data_died = dict(), dict(), dict()
 for d in DATA['Россия']['dates']:
     timeline_data_infected[d] = list()
@@ -91,8 +85,8 @@ for subject in df_subject_districts['Субъект']:
 
 
 def get_date(text: str):
-    _, mm, dd = text.split('.')
-    return f'{dd}.{mm}'
+    yy, mm, dd = text.split('.')
+    return f'{dd}.{mm}.20{yy}'
 
 
 def save_timeline_data(filename, timeline_data):
@@ -110,32 +104,3 @@ def save_timeline_data(filename, timeline_data):
 save_timeline_data('data-infected.csv', timeline_data_infected)
 save_timeline_data('data-healed.csv', timeline_data_healed)
 save_timeline_data('data-died.csv', timeline_data_died)
-
-
-infected_uplift = {
-    'Дата': [],
-    'Прирост': []
-}
-for i in range(1, len(DATA['Россия']['dates'])):
-    date = get_date(DATA['Россия']['dates'][i])
-    cur_day, prev_day = DATA['Россия']['infected'][i], DATA['Россия']['infected'][i-1]
-    infected_uplift['Дата'].append(date)
-    infected_uplift['Прирост'].append(cur_day - prev_day)
-pd.DataFrame(data=infected_uplift).to_csv('data-infected-uplift.csv', index=False)
-
-
-healed_died_uplift = {
-    'Дата': [],
-    'Вылечившиеся': [],
-    'Умершие': [],
-}
-for i in range(1, len(DATA['Россия']['dates'])):
-    date = get_date(DATA['Россия']['dates'][i])
-    healed_died_uplift['Дата'].append(date)
-
-    cur_day, prev_day = DATA['Россия']['healed'][i], DATA['Россия']['healed'][i-1]
-    healed_died_uplift['Вылечившиеся'].append(cur_day - prev_day)
-
-    cur_day, prev_day = DATA['Россия']['died'][i], DATA['Россия']['died'][i-1]
-    healed_died_uplift['Умершие'].append(-(cur_day - prev_day))
-pd.DataFrame(data=healed_died_uplift).to_csv('data-healed-died-uplift.csv', index=False)
