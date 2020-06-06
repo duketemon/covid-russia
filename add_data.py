@@ -21,7 +21,6 @@ def clean_subject_name(subject_name):
 
 
 def add_data(date):
-    date = date + '.2020'
     infected_df = pd.read_csv('data-infected.csv')
     healed_df = pd.read_csv('data-healed.csv')
     died_df = pd.read_csv('data-died.csv')
@@ -51,6 +50,5 @@ else:
     values = sys.argv[1].split('.')
     if len(values) != 2 or len(values[0]) != 2 or len(values[1]) != 2:
         print('Wrong the date format. Expected: dd.mm')
-
     else:
         add_data(sys.argv[1])
